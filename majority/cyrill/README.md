@@ -11,3 +11,12 @@ are no longer needed.
 
 You can find the meaning of all commands here:
 https://www.unix.com/man-page/linux/1/dc/
+
+## Haskell
+
+One way to run the Haskell implementation is to use GHCi. You can load the code
+using `:load boyer-moore` and execute the `majority` function like this:
+
+```haskell
+majority $ 1 :| [1, 2, 1, 3, 1]
+```
