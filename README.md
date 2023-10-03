@@ -2,6 +2,11 @@
 
 30 minute long exercises for the OpenTechSchool Co-Learning in Zurich
 
+Some sources for simple exercises:
+
+- <https://rosettacode.org/>
+- <https://leetcode.com/problemset/algorithms/>
+
 With online participants we are using:
 
 - <https://syncfiddle.net/>, a collaborative platform for Javascript.
