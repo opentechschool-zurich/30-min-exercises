@@ -1,4 +1,5 @@
 # https://en.wikipedia.org/wiki/Boyer%E2%80%93Moore_majority_vote_algorithm
+# O(n) + space O(1)
 
 
 items = [1, 1, 2, 1, 3, 1]

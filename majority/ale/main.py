@@ -1,7 +1,5 @@
 items = [1, 1, 2, 1, 3, 1]
 
-# O(n) + space: O(1)
-
 occurrences = {}
 for item in items:
     # print(item)
