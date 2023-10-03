@@ -1,5 +1,5 @@
 # https://en.wikipedia.org/wiki/Boyer%E2%80%93Moore_majority_vote_algorithm
-# O(n) + space O(1)
+# O(n) + space O(1) if it's known that there an absolute majority
 
 
 items = [1, 1, 2, 1, 3, 1]
