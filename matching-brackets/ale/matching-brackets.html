@@ -1,0 +1,48 @@
+<pre>
+Valid Parentheses
+
+Given a string s containing just the characters '(', ')', '{', '}', '[' and ']',
+determine if the input string is valid.
+
+An input string is valid if:
+
+    Open brackets must be closed by the same type of brackets.
+    Open brackets must be closed in the correct order.
+    Every close bracket has a corresponding open bracket of the same type.
+</pre>
+
+<script>
+  
+function assert(assertion, message) {
+	if (assertion === true) {
+  	return;
+  }
+  console.log('fail: ' + message);
+}
+
+function is_correct(s) {
+  let matching_brackets = {'(': ')', '[': ']', '{': '}'}
+  let opening_brackets = '';
+  for(i = 0; i < s.length; i++) {
+    if ('([{'.includes(s[i])) {
+      opening_brackets += s[i];
+      // console.log('opening')
+    } else if (Object.values(matching_brackets).includes(s[i])) {
+      let last = opening_brackets.slice(-1);
+      if (matching_brackets[last] === s[i]) {
+        // it's fine, remove it
+        opening_brackets = opening_brackets.slice(0, -1)
+      } else {
+        // it's not fine return false
+				return false;
+      }
+    }
+  }
+  // console.log(opening_brackets);
+  return opening_brackets.length === 0;
+}
+ 
+assert(is_correct('()') === true, 'open and close round brackets');
+assert(is_correct('(') === false, 'only open round brackets');
+assert(is_correct('abc(def)[a(b)]') === true, 'with other chars');
+</script>
