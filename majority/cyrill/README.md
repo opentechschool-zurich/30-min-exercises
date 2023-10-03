@@ -20,3 +20,7 @@ using `:load boyer-moore` and execute the `majority` function like this:
 ```haskell
 majority $ 1 :| [1, 2, 1, 3, 1]
 ```
+
+## Rust
+
+The Rust implementation can be compiled using `rustc boyer-moore.rs`.
