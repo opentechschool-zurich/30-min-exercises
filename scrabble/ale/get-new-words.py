@@ -1,8 +1,6 @@
 import sys
 from dataclasses import dataclass
 
-# TODO: support "parallel" words
-
 @dataclass
 class Tile:
     letter: str
@@ -104,17 +102,16 @@ def test():
     # hon -> p-hon-e
     # t -> t-o + o-n
     # ka-h + a-t
+    # hon-k + ski
 
     words = get_words_for_new_tiles(board, [Tile('p', 2, 3)])
     # print(f'###{words}')
     assert(len(words) == 1)
     assert(len(words[0]) == 3)
-    # print(words)
     assert(get_word_from_tiles(words[0]) == 'top')
     words = get_words_for_new_tiles(board, [Tile('s', 2, 0), Tile('p', 2, 3)])
     assert(len(words) == 1)
     assert(get_word_from_tiles(words[0]) == 'stop')
-    # print(words)
     words = get_words_for_new_tiles(board, [Tile('k', 4, 2)])
     assert(len(words) == 1)
     assert(get_word_from_tiles(words[0]) == 'honk')
@@ -126,10 +123,14 @@ def test():
     assert(get_word_from_tiles(words[0]) == 'to')
     assert(get_word_from_tiles(words[1]) == 'on')
     words = get_words_for_new_tiles(board, [Tile('k', 1, 0), Tile('a', 1, 1)])
-    # print(words)
     assert(len(words) == 2)
     assert(get_word_from_tiles(words[0]) == 'at')
     assert(get_word_from_tiles(words[1]) == 'kah')
+    words = get_words_for_new_tiles(board, [Tile('s', 4, 1), Tile('k', 4, 2), Tile('i', 4, 3)])
+    # print(words)
+    assert(len(words) == 2)
+    assert(get_word_from_tiles(words[0]) == 'honk')
+    assert(get_word_from_tiles(words[1]) == 'ski')
 
 if __name__ == "__main__":
     if sys.argv[1] == 'test':
