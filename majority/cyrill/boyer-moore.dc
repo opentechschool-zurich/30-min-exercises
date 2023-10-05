@@ -1,0 +1,26 @@
+#!/usr/bin/env dc
+
+# registers:
+#   m = majority
+#   l = loop body
+#   b = block body
+
+# init stack
+1 1 2 1 3 1
+
+# add i to stack
+0
+
+# store loop body to register l
+[
+  [q]sbz1=b
+  [1+rsmllxq]sbd0=b
+  [s_1+llxq]sbrdlm=br
+  1-rs_llx
+]sl
+
+# run loop
+llx
+
+# print winner (majority element)
+lmp
