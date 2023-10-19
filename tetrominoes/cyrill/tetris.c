@@ -94,6 +94,26 @@ const piece_t Z = {.color = COLOR_ANSI_BRIGHT_RED,
                    .tiles = {{-1, 1}, {0, 1}, {0, 0}, {1, 0}},
                    .offsets = &OFFSETS_JLSTZ};
 
+const piece_t *PIECES[7] = {&I, &J, &L, &O, &S, &T, &Z};
+
+typedef struct rng {
+  int data;
+  uint8_t remaining;
+} rng_t;
+
+void rng_init(rng_t *rng);
+uint8_t rng_next(rng_t *rng, uint8_t max);
+void rng_shuffle(rng_t *rng, void **data, uint8_t length);
+
+typedef struct pieces_buffer {
+  rng_t rng;
+  uint8_t cursor;
+  piece_t *pieces[14];
+} pieces_buffer_t;
+
+void pieces_buffer_init(pieces_buffer_t *pieces_buffer);
+piece_t *pieces_buffer_pop(pieces_buffer_t *pieces_buffer);
+
 typedef struct dynamic_piece {
   piece_orientation_t orientation;
   vec2_t position;
@@ -109,9 +129,7 @@ typedef struct frame_timer {
 } frame_timer_t;
 
 void frame_timer_init(frame_timer_t *timer);
-
 void frame_timer_reset(frame_timer_t *timer);
-
 bool_t frame_timer_tick(frame_timer_t *timer);
 
 typedef struct game {
@@ -119,20 +137,15 @@ typedef struct game {
   frame_timer_t frame_timer;
   dynamic_piece_t dynamic_piece;
   color_t field[FIELD_HEIGHT][FIELD_WIDTH];
+  pieces_buffer_t pieces_buffer;
 } game_t;
 
 void game_init(game_t *game);
-
 void game_render(game_t *game);
-
 void game_handle_input(game_t *game);
-
 void game_rotate_right(game_t *game);
-
 void game_rotate_left(game_t *game);
-
 void game_shift_right(game_t *game);
-
 void game_shift_left(game_t *game);
 
 // return 1 if piece was placed
@@ -215,7 +228,9 @@ uint8_t frame_timer_tick(frame_timer_t *timer) {
 void game_init(game_t *game) {
   memset(game, 0, sizeof(game_t));
   frame_timer_init(&game->frame_timer);
-  dynamic_piece_init(&game->dynamic_piece, &L);
+  pieces_buffer_init(&game->pieces_buffer);
+  const piece_t *first_piece = pieces_buffer_pop(&game->pieces_buffer);
+  dynamic_piece_init(&game->dynamic_piece, first_piece);
 }
 
 void game_render(game_t *game) {
@@ -240,7 +255,7 @@ void game_render(game_t *game) {
 }
 
 void game_handle_input(game_t *game) {
-  switch(getch()) {
+  switch (getch()) {
   case KEY_LEFT:
   case 'h':
     game_shift_left(game);
@@ -265,7 +280,8 @@ void game_handle_input(game_t *game) {
   case KEY_UP:
   case ' ':
   case 'k':
-    while (!game_fall(game));
+    while (!game_fall(game))
+      ;
     break;
   case KEY_DOWN:
   case 'j':
@@ -276,8 +292,7 @@ void game_handle_input(game_t *game) {
   }
 }
 
-void game_rotate_right(game_t *game)
-{
+void game_rotate_right(game_t *game) {
   dynamic_piece_t rotated = game->dynamic_piece;
   vec2_rotate_right(4, rotated.piece.tiles);
   rotated.orientation = (rotated.orientation + 1) % 4;
@@ -287,8 +302,7 @@ void game_rotate_right(game_t *game)
   }
 }
 
-void game_rotate_left(game_t *game)
-{
+void game_rotate_left(game_t *game) {
   dynamic_piece_t rotated = game->dynamic_piece;
   vec2_rotate_left(4, rotated.piece.tiles);
   rotated.orientation = (rotated.orientation + 3) % 4;
@@ -329,8 +343,8 @@ bool_t game_fall(game_t *game) {
       game->field[screen_position.y][screen_position.x] = piece->color;
     }
     game_remove_full_lines(game);
-    // TODO reinit random piece
-    dynamic_piece_init(&game->dynamic_piece, &T);
+    const piece_t *next_piece = pieces_buffer_pop(&game->pieces_buffer);
+    dynamic_piece_init(&game->dynamic_piece, next_piece);
     if (game_check_collision(game, &game->dynamic_piece)) {
       // TODO handle end of game
       curs_set(2);
@@ -357,6 +371,7 @@ void game_remove_full_lines(game_t *game) {
     }
     if (line_full) {
       memmove(&game->field[1], game->field, y * FIELD_WIDTH * sizeof(color_t));
+      y++;
     }
   }
 }
@@ -367,8 +382,10 @@ bool_t game_adjust_placement(game_t *game, dynamic_piece_t *dynamic_piece) {
   const vec2_t(*from_offsets)[5] = &(*offsets)[game->dynamic_piece.orientation];
   const vec2_t(*to_offsets)[5] = &(*offsets)[dynamic_piece->orientation];
   for (uint8_t i = 0; i < 5; i++) {
-    dynamic_piece->position.x = position.x + ((*from_offsets)[i].x - (*to_offsets)[i].x);
-    dynamic_piece->position.y = position.y + ((*from_offsets)[i].y - (*to_offsets)[i].y);
+    dynamic_piece->position.x =
+        position.x + ((*from_offsets)[i].x - (*to_offsets)[i].x);
+    dynamic_piece->position.y =
+        position.y + ((*from_offsets)[i].y - (*to_offsets)[i].y);
     if (!(game_check_collision(game, dynamic_piece))) {
       return 1;
     }
@@ -403,6 +420,63 @@ void vec2_rotate_left(uint8_t count, vec2_t *vec2s) {
     vec2s[i].x = -src.y;
     vec2s[i].y = src.x;
   }
+}
+
+void rng_init(rng_t *rng) {
+  // seed rng with epoch seconds
+  srand(time(NULL));
+  rng->remaining = 0;
+}
+
+uint8_t rng_next(rng_t *rng, uint8_t max) {
+  uint8_t result = max + 1, bits = 0, mask = max;
+  // count how many bits are needed to represent max (log2)
+  while (mask >>= 1)
+    bits++;
+  mask = (1 << bits) - 1;
+  // We reject random numbers > n this should give us uniformly distributed
+  // random numbers in the range 0..max.
+  // In 1/(max + 1) cases we will "waste" a number.
+  while (result > max) {
+    if (rng->remaining < bits) {
+      rng->remaining = sizeof(rng->data) * 8;
+      rng->data = rand();
+    }
+    result = rng->data & mask;
+    rng->data >>= bits;
+    rng->remaining -= bits;
+  }
+  return result;
+}
+
+// fisher-yates shuffle
+void rng_shuffle(rng_t *rng, void **data, uint8_t length) {
+  for (uint8_t i = 0; i < length - 1; i++) {
+    const uint8_t j = i + rng_next(rng, length - i - 1);
+    void *t = data[i];
+    data[i] = data[j];
+    data[j] = t;
+  }
+}
+
+void pieces_buffer_init(pieces_buffer_t *pieces_buffer) {
+  pieces_buffer->cursor = 0;
+  rng_init(&pieces_buffer->rng);
+  memcpy(pieces_buffer->pieces, PIECES, 7 * sizeof(piece_t *));
+  memcpy(&pieces_buffer->pieces[7], PIECES, 7 * sizeof(piece_t *));
+  rng_shuffle(&pieces_buffer->rng, (void **)pieces_buffer->pieces, 7);
+  rng_shuffle(&pieces_buffer->rng, (void **)&pieces_buffer->pieces[7], 7);
+}
+
+piece_t *pieces_buffer_pop(pieces_buffer_t *pieces_buffer) {
+  piece_t *result = pieces_buffer->pieces[pieces_buffer->cursor];
+  pieces_buffer->cursor = (pieces_buffer->cursor + 1) % 14;
+  if (pieces_buffer->cursor % 7 == 0) {
+    const uint8_t i = (pieces_buffer->cursor + 7) % 14;
+    memcpy(&pieces_buffer->pieces[i], PIECES, 7 * sizeof(piece_t *));
+    rng_shuffle(&pieces_buffer->rng, (void **)&pieces_buffer->pieces[i], 7);
+  }
+  return result;
 }
 
 void dynamic_piece_init(dynamic_piece_t *dynamic_piece, const piece_t *piece) {
