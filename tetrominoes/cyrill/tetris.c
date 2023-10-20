@@ -7,7 +7,6 @@
 #include <time.h>
 
 // TODO better ui (piece preview, center field, handle term too small)
-//   TODO draw ghost (bright black)
 // TODO hold
 // TODO pause
 // TODO high-score
@@ -37,6 +36,7 @@ typedef enum color {
   COLOR_ANSI_BLACK,
   COLOR_ANSI_YELLOW,
   COLOR_ANSI_WHITE,
+  COLOR_ANSI_BRIGHT_BLACK,
   COLOR_ANSI_BRIGHT_RED,
   COLOR_ANSI_BRIGHT_GREEN,
   COLOR_ANSI_BRIGHT_YELLOW,
@@ -174,6 +174,8 @@ bool_t game_adjust_placement(game_t *game, dynamic_piece_t *dynamic_piece);
 // return 1 if piece collides with game
 bool_t game_check_collision(game_t *game, dynamic_piece_t *dynamic_piece);
 
+void game_position_ghost(game_t *game, dynamic_piece_t *ghost);
+
 void game_score_line_clears(game_t *game, uint8_t line_clears);
 
 uint8_t speed(uint8_t level);
@@ -259,6 +261,16 @@ void game_render(game_t *game) {
   memcpy(field_buffer, game->field,
          FIELD_HEIGHT * FIELD_WIDTH * sizeof(color_t));
   const dynamic_piece_t *dynamic_piece = &game->dynamic_piece;
+  dynamic_piece_t ghost = *dynamic_piece;
+  ghost.piece.color = COLOR_ANSI_BRIGHT_BLACK;
+  game_position_ghost(game, &ghost);
+  const piece_t *ghost_piece = &ghost.piece;
+  for (uint8_t i = 0; i < 4; i++) {
+    const vec2_t screen_position = {
+        .x = ghost.position.x + ghost_piece->tiles[i].x,
+        .y = FIELD_HEIGHT - (ghost.position.y + ghost_piece->tiles[i].y)};
+    field_buffer[screen_position.y][screen_position.x] = ghost_piece->color;
+  }
   const piece_t *piece = &dynamic_piece->piece;
   for (uint8_t i = 0; i < 4; i++) {
     const vec2_t screen_position = {
@@ -464,6 +476,12 @@ bool_t game_check_collision(game_t *game, dynamic_piece_t *dynamic_piece) {
   return 0;
 }
 
+void game_position_ghost(game_t *game, dynamic_piece_t *ghost) {
+  while (!game_check_collision(game, ghost))
+    ghost->position.y--;
+  ghost->position.y++;
+}
+
 void game_score_line_clears(game_t *game, uint8_t line_clears) {
   uint32_t points = 0;
   switch (line_clears) {
@@ -627,6 +645,8 @@ uint8_t color_ansi_fg(color_t color) {
     return 33;
   case COLOR_ANSI_WHITE:
     return 37;
+  case COLOR_ANSI_BRIGHT_BLACK:
+    return 90;
   case COLOR_ANSI_BRIGHT_RED:
     return 91;
   case COLOR_ANSI_BRIGHT_GREEN:
@@ -652,6 +672,8 @@ uint8_t color_ansi_bg(color_t color) {
     return 43;
   case COLOR_ANSI_WHITE:
     return 47;
+  case COLOR_ANSI_BRIGHT_BLACK:
+    return 100;
   case COLOR_ANSI_BRIGHT_RED:
     return 101;
   case COLOR_ANSI_BRIGHT_GREEN:
