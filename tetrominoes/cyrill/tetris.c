@@ -6,10 +6,9 @@
 #include <string.h>
 #include <time.h>
 
-// TODO better ui (piece preview, center field, handle term too small)
-// TODO hold
 // TODO pause
 // TODO high-score
+// TODO handle window resize
 // TODO menu
 // TODO special point counts (combo, t-spin, back-to-back action)
 // TODO start-level
@@ -17,6 +16,10 @@
 
 #define FIELD_WIDTH 10
 #define FIELD_HEIGHT 20
+
+#define LEFT_COLUMN 5
+#define RIGHT_COLUMN 5
+#define PADDING 1
 
 const uint8_t STDIN = 0;
 
@@ -108,6 +111,8 @@ const piece_t Z = {.color = COLOR_ANSI_BRIGHT_RED,
 
 const piece_t *PIECES[7] = {&I, &J, &L, &O, &S, &T, &Z};
 
+void piece_render(const piece_t *piece, vec2_t position);
+
 typedef struct rng {
   int data;
   uint8_t remaining;
@@ -125,8 +130,11 @@ typedef struct pieces_buffer {
 
 void pieces_buffer_init(pieces_buffer_t *pieces_buffer);
 piece_t *pieces_buffer_pop(pieces_buffer_t *pieces_buffer);
+piece_t *pieces_buffer_peek(pieces_buffer_t *pieces_buffer);
 
 typedef struct dynamic_piece {
+  const piece_t *original;
+  bool_t hold_swap_locked;
   piece_orientation_t orientation;
   vec2_t position;
   piece_t piece;
@@ -149,6 +157,7 @@ typedef struct game {
   uint8_t level;
   uint8_t fall_delay;
   uint8_t lock_delay;
+  const piece_t *hold;
   frame_timer_t frame_timer;
   dynamic_piece_t dynamic_piece;
   color_t field[FIELD_HEIGHT][FIELD_WIDTH];
@@ -162,6 +171,7 @@ void game_rotate_right(game_t *game);
 void game_rotate_left(game_t *game);
 void game_shift_right(game_t *game);
 void game_shift_left(game_t *game);
+void game_swap_hold(game_t *game);
 
 // return 1 if piece was placed
 bool_t game_fall(game_t *game);
@@ -257,6 +267,12 @@ void game_init(game_t *game) {
 }
 
 void game_render(game_t *game) {
+  const uint16_t screen_height = PADDING + FIELD_HEIGHT / 2 + PADDING,
+                 screen_width = PADDING + LEFT_COLUMN + PADDING + FIELD_WIDTH + 2 +
+                         PADDING + RIGHT_COLUMN + PADDING;
+  const uint16_t screen_y = (LINES - screen_height) / 2,
+                 screen_x = (COLS - screen_width) / 2;
+
   color_t field_buffer[FIELD_HEIGHT][FIELD_WIDTH];
   memcpy(field_buffer, game->field,
          FIELD_HEIGHT * FIELD_WIDTH * sizeof(color_t));
@@ -278,11 +294,12 @@ void game_render(game_t *game) {
         .y = FIELD_HEIGHT - (dynamic_piece->position.y + piece->tiles[i].y)};
     field_buffer[screen_position.y][screen_position.x] = piece->color;
   }
-  const vec2_t field_offset = {2, 1};
+  const vec2_t field_offset = {PADDING + LEFT_COLUMN + PADDING + 1, PADDING};
   for (uint8_t y = 0; y < FIELD_HEIGHT; y += 2) {
     for (uint8_t x = 0; x < FIELD_WIDTH; x++) {
-      printf("\033[%d;%df\033[%d;%dm%s", y / 2 + field_offset.y,
-             x + field_offset.x, color_ansi_fg(field_buffer[y + 1][x]),
+      printf("\033[%d;%df\033[%d;%dm%s", screen_y + y / 2 + field_offset.y,
+             screen_x + x + field_offset.x,
+             color_ansi_fg(field_buffer[y + 1][x]),
              color_ansi_bg(field_buffer[y][x]), UTF8_LOWER_HALF_BLOCK);
     }
   }
@@ -291,28 +308,56 @@ void game_render(game_t *game) {
   printf("\033[%d;%dm", color_ansi_fg(COLOR_ANSI_WHITE),
          color_ansi_bg(COLOR_ANSI_BLACK));
   for (uint8_t y = 0; y < FIELD_HEIGHT / 2; y++) {
-    printf("\033[%d;%df%s\033[%d;%df%s", y + field_offset.y, field_offset.x - 1,
-           UTF8_BOX_DRAWINGS_LIGHT_VERTICAL, y + field_offset.y,
-           field_offset.x + FIELD_WIDTH, UTF8_BOX_DRAWINGS_LIGHT_VERTICAL);
+    printf("\033[%d;%df%s\033[%d;%df%s", screen_y + y + field_offset.y,
+           screen_x + field_offset.x - 1, UTF8_BOX_DRAWINGS_LIGHT_VERTICAL,
+           screen_y + y + field_offset.y,
+           screen_x + field_offset.x + FIELD_WIDTH,
+           UTF8_BOX_DRAWINGS_LIGHT_VERTICAL);
   }
-  printf("\033[%d;%df%s", field_offset.y + FIELD_HEIGHT / 2, field_offset.x - 1,
-         UTF8_BOX_DRAWINGS_ARC_UP_AND_RIGHT);
+  printf("\033[%d;%df%s", screen_y + field_offset.y + FIELD_HEIGHT / 2,
+         screen_x + field_offset.x - 1, UTF8_BOX_DRAWINGS_ARC_UP_AND_RIGHT);
   for (uint8_t i = 0; i < FIELD_WIDTH; i++) {
     printf("%s", UTF8_BOX_DRAWINGS_LIGHT_HORIZONTAL);
   }
   printf("%s", UTF8_BOX_DRAWINGS_ARC_UP_AND_LEFT);
 
   // score
-  printf("\033[%d;%df%s", field_offset.y, field_offset.x + FIELD_WIDTH + 2, "score");
-  printf("\033[%d;%df%5d", field_offset.y + 1, field_offset.x + FIELD_WIDTH + 2, game->score);
-  printf("\033[%d;%df%s", field_offset.y + 3, field_offset.x + FIELD_WIDTH + 2, "level");
-  printf("\033[%d;%df%5d", field_offset.y + 4, field_offset.x + FIELD_WIDTH + 2, game->level);
-  printf("\033[%d;%df%s", field_offset.y + 6, field_offset.x + FIELD_WIDTH + 2, "lines");
-  printf("\033[%d;%df%5d", field_offset.y + 7, field_offset.x + FIELD_WIDTH + 2, game->lines);
+  printf("\033[%d;%df%s", screen_y + PADDING + 3, screen_x + PADDING,
+         "score");
+  printf("\033[%d;%df%5d", screen_y + PADDING + 4, screen_x + PADDING,
+         game->score);
+  printf("\033[%d;%df%s", screen_y + PADDING,
+         screen_x + field_offset.x + FIELD_WIDTH + 1 + PADDING, "level");
+  printf("\033[%d;%df%5d", screen_y + PADDING + 1,
+         screen_x + field_offset.x + FIELD_WIDTH + 1 + PADDING, game->level);
+  printf("\033[%d;%df%s", screen_y + PADDING + 3,
+         screen_x + field_offset.x + FIELD_WIDTH + 1 + PADDING, "lines");
+  printf("\033[%d;%df%5d", screen_y + PADDING + 4,
+         screen_x + field_offset.x + FIELD_WIDTH + 1 + PADDING, game->lines);
+
+  // preview
+  vec2_t preview_position = {screen_x + field_offset.x + FIELD_WIDTH + 1 + PADDING,
+                             screen_y + PADDING + FIELD_HEIGHT / 2 - 1};
+  printf("\033[%d;%dm", color_ansi_fg(COLOR_ANSI_WHITE),
+         color_ansi_bg(COLOR_ANSI_BLACK));
+  printf("\033[%d;%df%s", preview_position.y - 1, preview_position.x, "next");
+  piece_render(pieces_buffer_peek(&game->pieces_buffer), preview_position);
+
+  // hold
+  vec2_t hold_position = {screen_x + PADDING, screen_y + PADDING + 1};
+  printf("\033[%d;%dm", color_ansi_fg(COLOR_ANSI_WHITE),
+         color_ansi_bg(COLOR_ANSI_BLACK));
+  printf("\033[%d;%df%s", hold_position.y - 1, hold_position.x, "hold");
+  if (game->hold) {
+    piece_render(game->hold, hold_position);
+  }
 }
 
 void game_handle_input(game_t *game) {
   switch (getch()) {
+  case '\t':
+    game_swap_hold(game);
+    break;
   case KEY_LEFT:
   case 'h':
     game_shift_left(game);
@@ -386,6 +431,17 @@ void game_shift_left(game_t *game) {
     game->dynamic_piece = shifted;
     game->fall_delay = LOCK_DELAY;
   }
+}
+
+void game_swap_hold(game_t *game) {
+  if (game->dynamic_piece.hold_swap_locked) {
+    return;
+  }
+  const piece_t *next =
+      game->hold == NULL ? pieces_buffer_pop(&game->pieces_buffer) : game->hold;
+  game->hold = game->dynamic_piece.original;
+  dynamic_piece_init(&game->dynamic_piece, next);
+  game->dynamic_piece.hold_swap_locked = 1;
 }
 
 bool_t game_fall(game_t *game) {
@@ -520,6 +576,24 @@ void vec2_rotate_left(uint8_t count, vec2_t *vec2s) {
   }
 }
 
+void piece_render(const piece_t *piece, vec2_t position) {
+  color_t piece_buffer[4][4];
+  memset(piece_buffer, COLOR_ANSI_BLACK, sizeof(piece_buffer));
+  for (uint8_t i = 0; i < 4; i++) {
+    const vec2_t screen_position = {
+        .x = 1 + piece->tiles[i].x,
+        .y = 1 - piece->tiles[i].y};
+    piece_buffer[screen_position.y][screen_position.x] = piece->color;
+  }
+  for (uint8_t y = 0; y < 4; y += 2) {
+    for (uint8_t x = 0; x < 4; x++) {
+      printf("\033[%d;%df\033[%d;%dm%s", position.y + y / 2, position.x + x,
+             color_ansi_fg(piece_buffer[y + 1][x]),
+             color_ansi_bg(piece_buffer[y][x]), UTF8_LOWER_HALF_BLOCK);
+    }
+  }
+}
+
 void rng_init(rng_t *rng) {
   // seed rng with epoch seconds
   srand(time(NULL));
@@ -577,11 +651,17 @@ piece_t *pieces_buffer_pop(pieces_buffer_t *pieces_buffer) {
   return result;
 }
 
+piece_t *pieces_buffer_peek(pieces_buffer_t *pieces_buffer) {
+  return pieces_buffer->pieces[pieces_buffer->cursor];
+}
+
 void dynamic_piece_init(dynamic_piece_t *dynamic_piece, const piece_t *piece) {
-  memcpy(&dynamic_piece->piece, piece, sizeof(piece_t));
+  dynamic_piece->original = piece;
+  dynamic_piece->hold_swap_locked = 0;
   dynamic_piece->orientation = PIECE_ORIENTATION_0;
   dynamic_piece->position.x = FIELD_WIDTH / 2 - 1;
   dynamic_piece->position.y = FIELD_HEIGHT - 1;
+  memcpy(&dynamic_piece->piece, piece, sizeof(piece_t));
 }
 
 uint8_t speed(uint8_t level) {
@@ -633,9 +713,7 @@ uint8_t speed(uint8_t level) {
   }
 }
 
-uint8_t level(uint8_t lines) {
-  return lines / 10;
-}
+uint8_t level(uint8_t lines) { return lines / 10; }
 
 uint8_t color_ansi_fg(color_t color) {
   switch (color) {
