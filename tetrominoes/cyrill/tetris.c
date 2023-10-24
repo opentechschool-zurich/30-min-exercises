@@ -6,7 +6,6 @@
 #include <string.h>
 #include <time.h>
 
-// TODO pause
 // TODO high-score
 // TODO handle window resize
 // TODO menu
@@ -152,6 +151,7 @@ void frame_timer_reset(frame_timer_t *timer);
 bool_t frame_timer_tick(frame_timer_t *timer);
 
 typedef struct game {
+  bool_t paused;
   uint32_t score;
   uint8_t lines;
   uint8_t level;
@@ -172,6 +172,7 @@ void game_rotate_left(game_t *game);
 void game_shift_right(game_t *game);
 void game_shift_left(game_t *game);
 void game_swap_hold(game_t *game);
+void game_over(game_t *game);
 
 // return 1 if piece was placed
 bool_t game_fall(game_t *game);
@@ -213,7 +214,13 @@ int main(int argc, char *argv[]) {
   frame_timer_reset(&game.frame_timer);
   game.fall_delay = speed(game.level);
 
-  while (true) { // game loop
+  while (1) { // game loop
+    if (game.paused) {
+      game_render(&game);
+      napms(100);
+      game_handle_input(&game);
+      continue;
+    }
     if (frame_timer_tick(&game.frame_timer)) {
       if (game.fall_delay > 0) {
         game.fall_delay--;
@@ -268,8 +275,8 @@ void game_init(game_t *game) {
 
 void game_render(game_t *game) {
   const uint16_t screen_height = PADDING + FIELD_HEIGHT / 2 + PADDING,
-                 screen_width = PADDING + LEFT_COLUMN + PADDING + FIELD_WIDTH + 2 +
-                         PADDING + RIGHT_COLUMN + PADDING;
+                 screen_width = PADDING + LEFT_COLUMN + PADDING + FIELD_WIDTH +
+                                2 + PADDING + RIGHT_COLUMN + PADDING;
   const uint16_t screen_y = (LINES - screen_height) / 2,
                  screen_x = (COLS - screen_width) / 2;
 
@@ -322,8 +329,7 @@ void game_render(game_t *game) {
   printf("%s", UTF8_BOX_DRAWINGS_ARC_UP_AND_LEFT);
 
   // score
-  printf("\033[%d;%df%s", screen_y + PADDING + 3, screen_x + PADDING,
-         "score");
+  printf("\033[%d;%df%s", screen_y + PADDING + 3, screen_x + PADDING, "score");
   printf("\033[%d;%df%5d", screen_y + PADDING + 4, screen_x + PADDING,
          game->score);
   printf("\033[%d;%df%s", screen_y + PADDING,
@@ -336,7 +342,8 @@ void game_render(game_t *game) {
          screen_x + field_offset.x + FIELD_WIDTH + 1 + PADDING, game->lines);
 
   // preview
-  vec2_t preview_position = {screen_x + field_offset.x + FIELD_WIDTH + 1 + PADDING,
+  vec2_t preview_position = {screen_x + field_offset.x + FIELD_WIDTH + 1 +
+                                 PADDING,
                              screen_y + PADDING + FIELD_HEIGHT / 2 - 1};
   printf("\033[%d;%dm", color_ansi_fg(COLOR_ANSI_WHITE),
          color_ansi_bg(COLOR_ANSI_BLACK));
@@ -351,48 +358,74 @@ void game_render(game_t *game) {
   if (game->hold) {
     piece_render(game->hold, hold_position);
   }
+
+  // paused state
+  vec2_t paused_position = {field_offset.x + FIELD_WIDTH / 2 - 3,
+                            field_offset.y - 1};
+  if (game->paused) {
+    printf("\033[%d;%df\033[%d;%dm%s", screen_y + paused_position.y,
+           screen_x + paused_position.x, color_ansi_fg(COLOR_ANSI_WHITE),
+           color_ansi_bg(COLOR_ANSI_BLACK), "paused");
+  } else {
+    printf("\033[%d;%df%s", screen_y + paused_position.y,
+           screen_x + paused_position.x, "      ");
+  }
 }
 
 void game_handle_input(game_t *game) {
-  switch (getch()) {
-  case '\t':
-    game_swap_hold(game);
-    break;
-  case KEY_LEFT:
-  case 'h':
-    game_shift_left(game);
-    break;
-  case KEY_RIGHT:
-  case 'l':
-    game_shift_right(game);
-    break;
-  case 'a':
-  case 's':
-    game_rotate_left(game);
-    break;
-  case 'd':
-  case 'f':
-    game_rotate_right(game);
-    break;
-  case 'q':
-    curs_set(2);
-    endwin();
-    exit(0);
-    break;
-  case KEY_UP:
-  case ' ':
-  case 'k':
-    while (!game_fall(game))
-      game->score += 2;
-    break;
-  case KEY_DOWN:
-  case 'j':
-    game_fall(game);
-    game->score++;
-    break;
-  default:
-    break;
-  }
+  if (game->paused)
+    switch (getch()) {
+    case 'q':
+      game_over(game);
+      break;
+    case ERR:
+      break;
+    default:
+      game->paused = 0;
+      frame_timer_reset(&game->frame_timer);
+      break;
+    }
+  else
+    switch (getch()) {
+    case '\t':
+      game_swap_hold(game);
+      break;
+    case KEY_LEFT:
+    case 'h':
+      game_shift_left(game);
+      break;
+    case KEY_RIGHT:
+    case 'l':
+      game_shift_right(game);
+      break;
+    case 'a':
+    case 's':
+      game_rotate_left(game);
+      break;
+    case 'd':
+    case 'f':
+      game_rotate_right(game);
+      break;
+    case 'q':
+      game_over(game);
+      break;
+    case KEY_UP:
+    case ' ':
+    case 'k':
+      while (!game_fall(game))
+        game->score += 2;
+      break;
+    case KEY_DOWN:
+    case 'j':
+      game_fall(game);
+      game->score++;
+      break;
+    case 'p':
+      game->paused = 1;
+      break;
+    default:
+      break;
+    }
 }
 
 void game_rotate_right(game_t *game) {
@@ -444,6 +477,13 @@ void game_swap_hold(game_t *game) {
   game->dynamic_piece.hold_swap_locked = 1;
 }
 
+void game_over(game_t *game) {
+  curs_set(2);
+  endwin();
+  printf("\033[2J\033[1;1f\033[31;40mYou lose!\nscore: %d\n", game->score);
+  exit(0);
+}
+
 bool_t game_fall(game_t *game) {
   dynamic_piece_t shifted = game->dynamic_piece;
   shifted.position.y--;
@@ -465,11 +505,7 @@ bool_t game_fall(game_t *game) {
     const piece_t *next_piece = pieces_buffer_pop(&game->pieces_buffer);
     dynamic_piece_init(&game->dynamic_piece, next_piece);
     if (game_check_collision(game, &game->dynamic_piece)) {
-      // TODO handle end of game
-      curs_set(2);
-      endwin();
-      printf("\033[2J\033[1;1f\033[31;40mYou lose!\nscore: %d\n", game->score);
-      exit(0);
+      game_over(game);
     }
     game->fall_delay = speed(game->level);
     game->lock_delay =
@@ -580,9 +616,8 @@ void piece_render(const piece_t *piece, vec2_t position) {
   color_t piece_buffer[4][4];
   memset(piece_buffer, COLOR_ANSI_BLACK, sizeof(piece_buffer));
   for (uint8_t i = 0; i < 4; i++) {
-    const vec2_t screen_position = {
-        .x = 1 + piece->tiles[i].x,
-        .y = 1 - piece->tiles[i].y};
+    const vec2_t screen_position = {.x = 1 + piece->tiles[i].x,
+                                    .y = 1 - piece->tiles[i].y};
     piece_buffer[screen_position.y][screen_position.x] = piece->color;
   }
   for (uint8_t y = 0; y < 4; y += 2) {
