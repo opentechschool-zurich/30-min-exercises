@@ -1,0 +1,375 @@
+<!doctype html>
+<html>
+<head>
+  <title>Minesweeper</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background: lightgray;
+      margin: 0;
+      padding: 1rem;
+    }
+
+    h1 {
+      margin: 0;
+      padding: 0 0 1rem;
+    }
+
+    .hidden { display: none; }
+
+    .grid-row {
+      height: 1.8rem;
+      white-space: nowrap;
+    }
+
+    .grid-cell {
+      width: 1.8rem;
+      height: 1.8rem;
+      box-sizing: border-box;
+      display: inline-block;
+      border: 0.15rem outset;
+      background: lightgrey;
+      overflow: hidden;
+      text-align: center;
+      font-weight: 800;
+      font-size: 1rem;
+      line-height: 1.5rem;
+    }
+
+    .grid-cell.revealed {
+      border: 0.07rem solid grey;
+      background: silver;
+    }
+
+    .grid-cell.flag::before {
+      content: '🚩';
+    }
+
+    .grid-cell.mine::before {
+      content: '💥';
+    }
+
+    .grid-cell.mine.flag::before {
+      content: '💣';
+    }
+
+    .game-over {
+      padding: 1rem 0;
+    }
+
+    .game-over h2 {
+      font-size: 1.2em;
+      margin: 0;
+    }
+
+    .mines {
+      padding: 0.2rem 0;
+    }
+
+    #new-game-dialog {
+      padding: 1rem 0;
+    }
+
+    #new-game-dialog h2 {
+      font-size: 1.2em;
+      margin: 0 0 0.5rem;
+    }
+
+    #new-game-dialog label {
+      width: 4.5rem;
+      display: inline-block;
+    }
+
+    #new-game-dialog input {
+      width: 6rem;
+    }
+
+    #new-game-dialog button {
+      width: 6rem;
+      margin: 0.5rem 0 0 4.75rem;
+    }
+
+    input {
+      box-sizing: border-box;
+      line-height: 1.2rem;
+      border: 0.15rem inset;
+    }
+
+    button {
+      box-sizing: border-box;
+      line-height: 1.2rem;
+      border: 0.15rem outset;
+      background: lightgrey;
+    }
+
+    button:active {
+      border-style: inset;
+      background: silver;
+    }
+  </style>
+</head>
+<body>
+  <h1>Minesweeper</h1>
+  <div id="display"></div>
+  <div id="new-game-dialog">
+    <h2>New Game</h2>
+    <form>
+      <div>
+        <label for="width">Columns</label>
+        <input type="number" name="width" id="width" value="16"/>
+      </div>
+      <div>
+        <label for="height">Rows</label>
+        <input type="number" name="height" id="height" value="16"/>
+      </div>
+      <div>
+        <label for="mines">Mines</label>
+        <input type="number" name="mines" id="mines" value="16"/>
+      </div>
+      <button id="new-game">New Game</button>
+    </form>
+  </div>
+  <script>
+    (function () {
+      const gameState = {
+        inProgress: 0,
+        won: 1,
+        lost: 2,
+      };
+      const neighborOffsets = [
+        { x: -1, y: -1 },
+        { x: 0, y: -1 },
+        { x: 1, y: -1 },
+        { x: -1, y: 0 },
+        { x: 1, y: 0 },
+        { x: -1, y: 1 },
+        { x: 0, y: 1 },
+        { x: 1, y: 1 },
+      ];
+      const display = document.getElementById("display");
+
+      document.getElementById("new-game").addEventListener("click", e => {
+        e.preventDefault();
+        const width = parseInt(document.getElementById("width").value);
+        const height = parseInt(document.getElementById("height").value);
+        const mines = parseInt(document.getElementById("mines").value);
+        console.log(width, height, mines);
+        startGame(width, height, mines);
+      });
+
+      function newGame(width, height, mines) {
+        const game = {
+          width, height, mines,
+          grid: Array(height),
+        };
+        for (let y = 0; y < height; y++) {
+          const row = Array(width);
+          for (let x = 0; x < width; x++) {
+            row[x] = {
+              flag: false,
+              mine: false,
+              revealed: false,
+              neighbors: 0,
+              element: undefined,
+            };
+          }
+          game.grid[y] = row;
+        }
+        placeMines(game, mines);
+        countNeighbors(game);
+        return game;
+      }
+
+      function placeMines(game, mines) {
+        if (mines >= game.width * game.height) {
+          console.error("there must be less mines than cells in a game")
+          return;
+        }
+        const nextRandom = max => Math.round(Math.random() * (max - 1));
+        let remaining = mines;
+        while (remaining > 0) {
+          const y = nextRandom(game.height);
+          const x = nextRandom(game.width);
+          field = game.grid[y][x];
+          if (!field.mine) {
+            field.mine = true;
+            remaining--;
+          }
+        }
+      }
+
+      function countNeighbors(game) {
+        for (let y = 0; y < game.height; y++) {
+          for (let x = 0; x < game.width; x++) {
+            let count = 0;
+            for (let offset of neighborOffsets) {
+              const position = {
+                x: x + offset.x,
+                y: y + offset.y
+              };
+              if (position.x >= 0 && position.x < game.width &&
+                  position.y >= 0 && position.y < game.height &&
+                  game.grid[position.y][position.x].mine) {
+                count++;
+              }
+            }
+            game.grid[y][x].neighbors = count;
+          }
+        }
+      }
+
+      function reveal(game, x, y) {
+        if (game.grid[y][x].mine) {
+          revealAll(game);
+          return gameState.lost;
+        }
+        const visited = [{x, y}];
+        const queue = [{x, y}];
+        while (queue.length > 0) {
+          const position = queue.pop();
+          const cell = game.grid[position.y][position.x];
+          cell.flag = false;
+          cell.revealed = true;
+          updateCellDisplay(cell);
+          if (cell.neighbors === 0) {
+            for (let offset of neighborOffsets) {
+              const neighbor = {
+                x: position.x + offset.x,
+                y: position.y + offset.y,
+              };
+              if (!visited.some(item => item.x === neighbor.x && item.y === neighbor.y) &&
+                  neighbor.x >= 0 && neighbor.x < game.width &&
+                  neighbor.y >= 0 && neighbor.y < game.height) {
+                visited.push(neighbor);
+                queue.push(neighbor);
+              }
+            }
+          }
+        }
+        for (let y = 0; y < game.height; y++) {
+          for (let x = 0; x < game.width; x++) {
+            const cell = game.grid[y][x];
+            if (cell.mine && !cell.flag || !cell.revealed && !cell.mine) {
+              return gameState.inProgress;
+            }
+          }
+        }
+        revealAll(game);
+        return gameState.won;
+      }
+
+      function revealAll(game) {
+        for (let y = 0; y < game.height; y++) {
+          for (let x = 0; x < game.width; x++) {
+            const cell = game.grid[y][x];
+            if (!cell.revealed) {
+              cell.revealed = true;
+              updateCellDisplay(cell);
+            }
+          }
+        }
+      }
+
+      function toggleFlag(game, x, y) {
+        const cell = game.grid[y][x];
+        cell.flag = !cell.flag;
+        updateCellDisplay(cell);
+        for (let y = 0; y < game.height; y++) {
+          for (let x = 0; x < game.width; x++) {
+            const cell = game.grid[y][x];
+            if (cell.mine && !cell.flag || !cell.revealed && !cell.mine) {
+              return gameState.inProgress;
+            }
+          }
+        }
+        revealAll(game);
+        return gameState.won;
+      }
+
+      function updateCellDisplay(cell) {
+        if (!cell.element) {
+          console.error("cannot update cell: element is not defined")
+          return;
+        }
+        if (cell.revealed) {
+          cell.element.classList.add("revealed");
+          if (cell.mine) {
+            cell.element.classList.add("mine");
+          } else if (cell.neighbors > 0) {
+            cell.element.innerText = cell.neighbors;
+          }
+          if (!cell.flag) {
+            cell.element.classList.remove("flag");
+          }
+        } else {
+          if (cell.flag) {
+            cell.element.classList.add("flag");
+          } else {
+            cell.element.classList.remove("flag");
+          }
+        }
+      }
+
+      function handleGameState(game, state) {
+        if (state === gameState.inProgress) return;
+        const title = document.createElement("h2");
+        title.innerText = "Game Over!";
+        const message = document.createElement("span");
+        message.innerText =
+          state === gameState.won ? "You win 🥳" : "You lose 😔";
+        game.gameOver.appendChild(title);
+        game.gameOver.appendChild(message);
+        game.gameOver.classList.remove("hidden");
+      }
+
+      function buildDisplay(game) {
+        const display = document.createElement("div");
+        const grid = document.createElement("div");
+        grid.classList.add("grid");
+        for (let y = 0; y < game.height; y++) {
+          const row = document.createElement("div");
+          row.classList.add("grid-row");
+          for (let x = 0; x < game.width; x++) {
+            const cell = document.createElement("div");
+            cell.classList.add("grid-cell");
+            cell.addEventListener("click", () => {
+              const gameState = reveal(game, x, y);
+              handleGameState(game, gameState);
+            }, { once: true });
+            cell.addEventListener("contextmenu", e => {
+              e.preventDefault();
+              const cellData = game.grid[y][x];
+              if (!cellData.revealed) {
+                const gameState = toggleFlag(game, x, y);
+                handleGameState(game, gameState);
+              }
+            });
+            game.grid[y][x].element = cell;
+            row.appendChild(cell);
+          }
+          grid.appendChild(row);
+        }
+        const minesDisplay = document.createElement("div");
+        minesDisplay.classList.add("mines");
+        minesDisplay.innerText = `Mines: ${game.mines}`;
+        const gameOver = document.createElement("div");
+        gameOver.classList.add("game-over");
+        gameOver.classList.add("hidden");
+        game.gameOver = gameOver;
+        display.appendChild(gameOver);
+        display.appendChild(minesDisplay);
+        display.appendChild(grid);
+        return display;
+      }
+
+      function startGame(width, height, mines) {
+        const game = newGame(width, height, mines);
+        display.innerHTML = '';
+        display.appendChild(buildDisplay(game));
+      }
+
+      startGame(16, 16, 16);
+    })();
+  </script>
+</body>
+</html>
