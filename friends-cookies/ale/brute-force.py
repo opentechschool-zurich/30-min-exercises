@@ -4,22 +4,19 @@ def brute_force(houses):
     max_amount = 0
     house_numbers = range(0, n)
     for i in range(0, n):
-        for comb in itertools.combinations(house_numbers, i + 1):
-            # print(comb)
+        for combination in itertools.combinations(house_numbers, i + 1):
             # check if the previous is -1
             previous = None
             neighbour = False
-            for c in comb:
+            for c in combination:
                 if previous is not None and c == previous + 1:
                     neighbour = True
                     break
                 previous = c
             if neighbour is True:
                 continue
-            # print('===', comb)
-            max_amount = max(max_amount, sum(houses[j] for j in comb))
-
-
+            # print('===', combination)
+            max_amount = max(max_amount, sum(houses[j] for j in combination))
     return max_amount
 
 if __name__ == '__main__':
