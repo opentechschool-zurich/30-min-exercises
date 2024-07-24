@@ -28,6 +28,16 @@ def won(world):
         if result == 8:
             return 2
     # if a column is winner
+    for column in range(3):
+        # result = product(world[column * 3:column * 3 + 3])
+        # 0 1 2
+        # 3 4 5
+        # 6 7 8
+        result = world[0 + column] * world[3 + column] * world[6 + column]
+        if result == 1:
+            return 1
+        if result == 8:
+            return 2
     # if a diagonal is winner
     
     return 0
@@ -54,3 +64,22 @@ world2 = list(world1)
 world2[3:6] = [2] * 3
 print_world(world2)
 assert won(world2) == 2
+
+world_column_1_1 = list(world)
+world_column_1_1[0] = 1
+world_column_1_1[3] = 1
+world_column_1_1[6] = 1
+
+assert won(world_column_1_1) == 1
+
+world_column_2_2 = list(world)
+world_column_2_2[1] = 2
+world_column_2_2[4] = 2
+world_column_2_2[7] = 2
+
+assert won(world_column_2_2) == 2
+
+world_column_0_0 = list(world)
+world_column_0_0[0] = 1
+world_column_0_0[4] = 1
+assert won(world_column_0_0) == 0
