@@ -1,5 +1,10 @@
 # TIC-TAC-TOE
 
+from functools import reduce
+
+def product(l):
+    return reduce(lambda a, b: a * b, l)
+
 def print_world(world):
     print('---')
     for y in range(3):
@@ -8,37 +13,40 @@ def print_world(world):
             row += str(world[y * 3 + x])
         print(row)
 
-PLAYER_1_WON_PRODUCT  = 1
-PLAYER_2_WON_PRODUCT  = 8
-TOP_LEFT = 0
-TOP_MIDDLE = 1
-TOP_RIGHT = 2
-MIDDLE_LEFT = 3
-MIDDLE_MIDDLE = 4
-MIDDLE_RIGHT = 5
-BOTTOM_LEFT = 6
-BOTTOM_MIDDLE = 7
-BOTTOM_RIGHT = 8
-
 def won(world):
-    to_be_checked = [
-        [TOP_LEFT, TOP_MIDDLE, TOP_RIGHT], # rows
-        [MIDDLE_LEFT, MIDDLE_MIDDLE, MIDDLE_RIGHT],
-        [BOTTOM_LEFT, BOTTOM_MIDDLE, BOTTOM_RIGHT],
-        [TOP_LEFT, MIDDLE_LEFT, BOTTOM_LEFT], # columns
-        [TOP_MIDDLE, MIDDLE_MIDDLE, BOTTOM_MIDDLE],
-        [TOP_RIGHT, MIDDLE_RIGHT, BOTTOM_RIGHT],
-        [TOP_LEFT, MIDDLE_MIDDLE, BOTTOM_RIGHT], # both diagonals
-        [TOP_RIGHT, MIDDLE_MIDDLE, BOTTOM_LEFT]
-    ]
-    # for [a, b, c] in to_be_checked:
-    #     result = world[a] * world[b] * world[c]
-    for triple in to_be_checked:
-        result = world[triple[0]] * world[triple[1]] * world[triple[2]]
-        if result == PLAYER_1_WON_PRODUCT:
+    # if a row is winner
+    # result = world[0] * world[1] * world[2]
+    # result = product(world[0:3])
+    # world[0:3] == [1] * 3
+    for i in range(3):
+        result = product(world[i * 3:i * 3 + 3])
+        if result == 1:
             return 1
-        elif result == PLAYER_2_WON_PRODUCT:
+        if result == 8:
             return 2
+    # if a column is winner
+    for column in range(3):
+        # result = product(world[column * 3:column * 3 + 3])
+        # 0 1 2
+        # 3 4 5
+        # 6 7 8
+        result = world[0 + column] * world[3 + column] * world[6 + column]
+        if result == 1:
+            return 1
+        if result == 8:
+            return 2
+    # if a diagonal is winner
+  
+    result = world[0] * world[4] * world[8]
+    if result == 1:
+        return 1
+    if result == 8:
+        return 2
+    result = world[2] * world[4] * world[6]
+    if result == 1:
+        return 1
+    if result == 8:
+        return 2
 
     return 0
 
