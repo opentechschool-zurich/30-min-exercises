@@ -49,8 +49,6 @@ t.color('red', 'yellow')
 t.begin_fill()
 
 for i in range(36):
-# i = 0
-# while True:
     t.forward(100)
     t.left(170)
 
