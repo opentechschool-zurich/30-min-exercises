@@ -18,15 +18,15 @@ function calculate_simple(calculation) {
  */
 function tokenize(calculation, operators) {
   tokens = [];
-  value = ''
+  digits = ''
   for (const c of calculation) {
     if (c >= '0' && c <= '9') {
-      value += c;
+      digits += c;
       continue;
     }
-    if (value.length > 0) {
-      tokens.push(Number(value));
-      value = ''
+    if (digits.length > 0) {
+      tokens.push(Number(digits));
+      digits = ''
     }
     if (c == ' ') {
       continue;
