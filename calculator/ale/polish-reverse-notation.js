@@ -14,6 +14,23 @@ function calculate_simple(calculation) {
 }
 
 /**
+ * Perform a postfix from a list of values and operators
+ */
+function calculate(calculation) {
+  let operands = [];
+  while (calculation.length > 1) {
+    let operand = calculation.shift();
+    while (!(operand instanceof Function)) {
+      operands.push(operand);
+      operand = calculation.shift();
+    }
+    let [a, b] = operands.splice(-2, 2);
+    calculation.unshift(operand(a, b));
+  }
+  return calculation[0];
+}
+
+/**
  * Convert a post fix calculation string into tokens: numebrs and operator functions
  */
 function tokenize(calculation, operators) {
@@ -37,23 +54,6 @@ function tokenize(calculation, operators) {
     // invalid character: ignore it
   }
   return tokens;
-}
-
-/**
- * Perform a postfix from a list of values and operators
- */
-function calculate(calculation) {
-  let operands = [];
-  while (calculation.length > 1) {
-    let operand = calculation.shift();
-    while (!(operand instanceof Function)) {
-      operands.push(operand);
-      operand = calculation.shift();
-    }
-    let [a, b] = operands.splice(-2, 2);
-    calculation.unshift(operand(a, b));
-  }
-  return calculation[0];
 }
 
 sum = (a, b) => a + b
