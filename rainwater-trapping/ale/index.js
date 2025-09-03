@@ -8,7 +8,7 @@ function get_water_quantity(blocks) {
     start_i = max_i;
     let max_height = 0;
     for (let i = start_i + 1; i < blocks.length; i++) {
-      if (blocks[start_i] <= blocks[i]) {
+      if (blocks[start_i] < blocks[i]) {
         max_i = i;
         max_height = blocks[i];
         break;

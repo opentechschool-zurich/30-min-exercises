@@ -19,7 +19,7 @@ function get_water_quantity(blocks) {
         max_i = i;
       }
     }
-    let rain_height = Math.min(blocks[0], blocks[max_i]);
+    let rain_height = Math.min(blocks[start_i], blocks[max_i]);
     // console.log(rain_height, max_i);
     for (let i = start_i; i < max_i; i++) {
       volume += Math.max(0, rain_height - blocks[i]);
