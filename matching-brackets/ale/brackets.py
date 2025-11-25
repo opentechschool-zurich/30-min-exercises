@@ -5,9 +5,7 @@ def matching_brackets(input_text):
         if c in matching_brackets:
             stack.append(matching_brackets[c])
         elif c in matching_brackets.values():
-            if len(stack) == 0:
-                return False
-            if stack.pop() != c:
+            if len(stack) == 0 or stack.pop() != c:
                 return False
     return len(stack) == 0
 
