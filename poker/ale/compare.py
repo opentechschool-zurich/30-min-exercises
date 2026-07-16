@@ -2,11 +2,11 @@ import itertools
 import random
 
 def get_shuffled_deck():
-   suits = ['♠', '♥', '♦', '♣']
-   rank = range(1, 14)
-   deck = list(itertools.product(rank, suits))
-   random.shuffle(deck)
-   return deck
+    suits = ['♠', '♥', '♦', '♣']
+    rank = range(1, 14)
+    deck = list(itertools.product(rank, suits))
+    random.shuffle(deck)
+    return deck
 
 def get_valid_hands(deck):
     a = deck[0:5]
@@ -124,35 +124,29 @@ def get_winner(a, b):
     
 
 def main():
-    colors = ['D', 'H', 'C', 'S']
-    cards = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
-    hand_a = [(1, 'D'), (1, 'H'), (1, 'S'), (3, 'H'), (3, 'S')]
-    hand_b = [(1, 'C'), (2, 'C'), (3, 'C'), (4, 'C'), (5, 'C')]
-    # print(get_winner(hand_a, hand_b))
-
-    assert(get_high_card(get_sorted_hand(([(2, 'D'), (3, 'H'), (2, 'S'), (4, 'H'), (5, 'S')]))) == [5, 4, 3, 2, 2])
-    assert(get_high_card(get_sorted_hand([(1, 'D'), (1, 'H'), (2, 'S'), (4, 'H'), (5, 'S')])) == [5, 4, 2, 1, 1])
-    assert(get_pair(get_sorted_hand([(1, 'D'), (1, 'H'), (2, 'S'), (4, 'H'), (5, 'S')])) == [1, 5, 4, 2])
-    assert(get_pair(get_sorted_hand([(1, 'D'), (3, 'H'), (2, 'S'), (4, 'H'), (5, 'S')])) == [])
-    assert(get_two_pairs(get_sorted_hand([(1, 'D'), (3, 'H'), (2, 'S'), (4, 'H'), (5, 'S')])) == [])
-    assert(get_two_pairs(get_sorted_hand([(1, 'D'), (1, 'H'), (2, 'S'), (4, 'H'), (5, 'S')])) == [])
-    assert(get_two_pairs(get_sorted_hand([(1, 'D'), (1, 'H'), (2, 'S'), (2, 'H'), (5, 'S')])) == [2, 1, 5])
-    assert(get_two_pairs(get_sorted_hand([(1, 'D'), (1, 'H'), (2, 'S'), (2, 'H'), (2, 'S')])) == [])
-    assert(get_three_of_a_kind(get_sorted_hand([(1, 'D'), (1, 'H'), (2, 'S'), (2, 'H'), (2, 'S')])) == [2, 1, 1])
-    assert(get_three_of_a_kind(get_sorted_hand([(1, 'D'), (2, 'H'), (2, 'S'), (2, 'H'), (2, 'S')])) == [])
-    assert(get_three_of_a_kind(get_sorted_hand([(1, 'D'), (1, 'H'), (2, 'S'), (2, 'H'), (5, 'S')])) == [])
-    assert(get_straight(get_sorted_hand([(1, 'D'), (1, 'H'), (2, 'S'), (2, 'H'), (5, 'S')])) == [])
-    assert(get_straight(get_sorted_hand([(2, 'D'), (1, 'H'), (3, 'S'), (4, 'H'), (5, 'S')])) == [5, 4, 3, 2, 1])
-    assert(get_flush(get_sorted_hand([(2, 'D'), (1, 'H'), (3, 'S'), (4, 'H'), (5, 'S')])) == [])
-    assert(get_flush(get_sorted_hand([(2, 'S'), (1, 'S'), (3, 'S'), (4, 'S'), (6, 'S')])) == [6, 4, 3, 2, 1])
-    # print(get_full_house(get_sorted_hand([(1, 'D'), (1, 'H'), (2, 'S'), (2, 'H'), (2, 'S')])))
-    # assert(get_full_house(get_sorted_hand([(1, 'D'), (1, 'H'), (2, 'S'), (2, 'H'), (2, 'S')])) == [2, 1])
-    # assert(get_full_house(get_sorted_hand([(1, 'D'), (1, 'H'), (2, 'S'), (2, 'H'), (3, 'S')])) == [])
-    # assert(get_full_house(get_sorted_hand([(3, 'D'), (1, 'H'), (2, 'S'), (2, 'H'), (2, 'S')])) == [])
-    assert(get_four_of_a_kind(get_sorted_hand([(1, 'D'), (1, 'H'), (2, 'S'), (2, 'H'), (5, 'S')])) == [])
-    assert(get_four_of_a_kind(get_sorted_hand([(1, 'D'), (2, 'H'), (2, 'S'), (2, 'H'), (2, 'S')])) == [2, 1])
-    assert(get_straight_flush(get_sorted_hand([(1, 'D'), (2, 'H'), (2, 'S'), (2, 'H'), (2, 'S')])) == [])
-    assert(get_straight_flush(get_sorted_hand([(1, 'D'), (2, 'D'), (3, 'D'), (4, 'D'), (5, 'D')])) == [5, 4, 3, 2, 1])
+    assert(get_high_card(get_sorted_hand(([(2, '♦'), (3, '♥'), (2, '♠'), (4, '♥'), (5, '♠')]))) == [5, 4, 3, 2, 2])
+    assert(get_high_card(get_sorted_hand([(1, '♦'), (1, '♥'), (2, '♠'), (4, '♥'), (5, '♠')])) == [5, 4, 2, 1, 1])
+    assert(get_pair(get_sorted_hand([(1, '♦'), (1, '♥'), (2, '♠'), (4, '♥'), (5, '♠')])) == [1, 5, 4, 2])
+    assert(get_pair(get_sorted_hand([(1, '♦'), (3, '♥'), (2, '♠'), (4, '♥'), (5, '♠')])) == [])
+    assert(get_two_pairs(get_sorted_hand([(1, '♦'), (3, '♥'), (2, '♠'), (4, '♥'), (5, '♠')])) == [])
+    assert(get_two_pairs(get_sorted_hand([(1, '♦'), (1, '♥'), (2, '♠'), (4, '♥'), (5, '♠')])) == [])
+    assert(get_two_pairs(get_sorted_hand([(1, '♦'), (1, '♥'), (2, '♠'), (2, '♥'), (5, '♠')])) == [2, 1, 5])
+    assert(get_two_pairs(get_sorted_hand([(1, '♦'), (1, '♥'), (2, '♠'), (2, '♥'), (2, '♠')])) == [])
+    assert(get_three_of_a_kind(get_sorted_hand([(1, '♦'), (1, '♥'), (2, '♠'), (2, '♥'), (2, '♠')])) == [2, 1, 1])
+    assert(get_three_of_a_kind(get_sorted_hand([(1, '♦'), (2, '♥'), (2, '♠'), (2, '♥'), (2, '♠')])) == [])
+    assert(get_three_of_a_kind(get_sorted_hand([(1, '♦'), (1, '♥'), (2, '♠'), (2, '♥'), (5, '♠')])) == [])
+    assert(get_straight(get_sorted_hand([(1, '♦'), (1, '♥'), (2, '♠'), (2, '♥'), (5, '♠')])) == [])
+    assert(get_straight(get_sorted_hand([(2, '♦'), (1, '♥'), (3, '♠'), (4, '♥'), (5, '♠')])) == [5, 4, 3, 2, 1])
+    assert(get_flush(get_sorted_hand([(2, '♦'), (1, '♥'), (3, '♠'), (4, '♥'), (5, '♠')])) == [])
+    assert(get_flush(get_sorted_hand([(2, '♠'), (1, '♠'), (3, '♠'), (4, '♠'), (6, '♠')])) == [6, 4, 3, 2, 1])
+    # print(get_full_house(get_sorted_hand([(1, '♦'), (1, '♥'), (2, '♠'), (2, '♥'), (2, '♠')])))
+    # assert(get_full_house(get_sorted_hand([(1, '♦'), (1, '♥'), (2, '♠'), (2, '♥'), (2, '♠')])) == [2, 1])
+    # assert(get_full_house(get_sorted_hand([(1, '♦'), (1, '♥'), (2, '♠'), (2, '♥'), (3, '♠')])) == [])
+    # assert(get_full_house(get_sorted_hand([(3, '♦'), (1, '♥'), (2, '♠'), (2, '♥'), (2, '♠')])) == [])
+    assert(get_four_of_a_kind(get_sorted_hand([(1, '♦'), (1, '♥'), (2, '♠'), (2, '♥'), (5, '♠')])) == [])
+    assert(get_four_of_a_kind(get_sorted_hand([(1, '♦'), (2, '♥'), (2, '♠'), (2, '♥'), (2, '♠')])) == [2, 1])
+    assert(get_straight_flush(get_sorted_hand([(1, '♦'), (2, '♥'), (2, '♠'), (2, '♥'), (2, '♠')])) == [])
+    assert(get_straight_flush(get_sorted_hand([(1, '♦'), (2, '♦'), (3, '♦'), (4, '♦'), (5, '♦')])) == [5, 4, 3, 2, 1])
 
     # deck = get_shuffled_deck()
     # print(len(deck), deck)
@@ -161,20 +155,20 @@ def main():
     # print('b', b)
     # print(len(deck), deck)
 
-    hand_a = [(1, 'D'), (2, 'H'), (3, 'S'), (5, 'H'), (6, 'S')]
-    hand_b = [(1, 'C'), (2, 'C'), (3, 'C'), (4, 'C'), (8, 'C')]
+    hand_a = [(1, '♦'), (2, '♥'), (3, '♠'), (5, '♥'), (6, '♠')]
+    hand_b = [(1, '♣'), (2, '♣'), (3, '♣'), (4, '♣'), (8, '♣')]
     assert(get_winner(hand_a, hand_b) == 'b')
-    hand_a = [(1, 'D'), (1, 'H'), (3, 'S'), (5, 'H'), (6, 'S')]
-    hand_b = [(1, 'C'), (2, 'C'), (3, 'C'), (4, 'C'), (8, 'C')]
+    hand_a = [(1, '♦'), (1, '♥'), (3, '♠'), (5, '♥'), (6, '♠')]
+    hand_b = [(1, '♣'), (2, '♣'), (3, '♣'), (4, '♣'), (8, '♣')]
     assert(get_winner(hand_a, hand_b) == 'a')
-    hand_a = [(9, 'D'), (9, 'H'), (3, 'S'), (5, 'H'), (6, 'S')]
-    hand_b = [(1, 'C'), (1, 'H'), (3, 'C'), (3, 'H'), (8, 'C')]
+    hand_a = [(9, '♦'), (9, '♥'), (3, '♠'), (5, '♥'), (6, '♠')]
+    hand_b = [(1, '♣'), (1, '♥'), (3, '♣'), (3, '♥'), (8, '♣')]
     assert(get_winner(hand_a, hand_b) == 'b')
-    # hand_a = [(1, 'D'), (2, 'H'), (3, 'S'), (5, 'H'), (8, 'S')]
-    # hand_b = [(1, 'C'), (2, 'C'), (3, 'C'), (4, 'C'), (8, 'C')]
+    # hand_a = [(1, '♦'), (2, '♥'), (3, '♠'), (5, '♥'), (8, '♠')]
+    # hand_b = [(1, '♣'), (2, '♣'), (3, '♣'), (4, '♣'), (8, '♣')]
     # assert(get_winner(hand_a, hand_b) == 'a')
 
-    # [(1, 'D'), (1, 'H'), (2, 'S'), (3, 'H'), (3, 'S')]
+    # [(1, '♦'), (1, '♥'), (2, '♠'), (3, '♥'), (3, '♠')]
     
 
 if __name__ == '__main__':
