@@ -1,3 +1,19 @@
+import itertools
+import random
+
+def get_shuffled_deck():
+   suits = ['♠', '♥', '♦', '♣']
+   rank = range(1, 14)
+   deck = list(itertools.product(rank, suits))
+   random.shuffle(deck)
+   return deck
+
+def get_valid_hands(deck):
+    a = deck[0:5]
+    b = deck[5:10]
+    del deck[:10]
+    return a, b
+
 # def is_royal_flush(hand):
 #     # TODO: we don't need to check this: it's the straight flush that wins
 #     # same color, 10..1
@@ -135,6 +151,13 @@ def main():
     # assert(is_four_of_a_kind([(1, 'D'), (2, 'H'), (2, 'S'), (2, 'H'), (2, 'S')]) == True)
     # assert(is_straight_flush([(1, 'D'), (2, 'H'), (2, 'S'), (2, 'H'), (2, 'S')]) == False)
     # assert(is_straight_flush([(1, 'D'), (2, 'D'), (3, 'D'), (4, 'D'), (5, 'D')]) == True)
+
+    # deck = get_shuffled_deck()
+    # print(len(deck), deck)
+    # a, b = get_valid_hands(deck)
+    # print('a', a)
+    # print('b', b)
+    # print(len(deck), deck)
 
     hand_a = [(1, 'D'), (2, 'H'), (3, 'S'), (5, 'H'), (6, 'S')]
     hand_b = [(1, 'C'), (2, 'C'), (3, 'C'), (4, 'C'), (8, 'C')]
