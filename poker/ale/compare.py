@@ -14,54 +14,61 @@ def get_valid_hands(deck):
     del deck[:10]
     return a, b
 
-# def is_royal_flush(hand):
+# def get_royal_flush(hand):
 #     # TODO: we don't need to check this: it's the straight flush that wins
 #     # same color, 10..1
-#     return is_straight_flush(hand) and get_high_card(hand) == 14
+#     return get_straight_flush(hand) and get_high_card(hand) == 14
 # 
-def is_straight_flush(hand):
+def get_straight_flush(hand):
     # same color, contiguous numbers
-    return is_straight(hand) and is_flush(hand)
+    straight = get_straight(hand)
+    flush = get_flush(hand)
+    if straight and flush:
+        return straight
+    return []
 
-def is_four_of_a_kind(hand):
+def get_four_of_a_kind(hand):
     # four have same number
     quadruples = get_combinations(hand, 4)
     if len(quadruples) == 1:
-        return True
-    return False
+        return quadruples + get_not_matching(hand, quadruples)
+    return []
 
-def is_full_house(hand):
+def get_full_house(hand):
     # three of a kind and a pair
-    return is_three_of_a_kind(hand) and get_pair(hand)
+    three = get_three_of_a_kind(hand)
+    two = get_pair(hand)
+    if three and two:
+        return three + two
+    return []
 
-def is_flush(hand):
+def get_flush(hand):
     # all same color
     previous = hand[0][1]
     for _, color in hand[1:]:
         if color != previous:
-            return False
-    return True
+            return []
+    return get_not_matching(hand, [])
 
-def is_straight(hand):
+def get_straight(hand):
     # contiguous numbers
-    hand.sort(key=lambda v: v[0])
     previous = hand[0][0]
     for value, _ in hand[1:]:
-        if value != previous + 1:
-            return False
-        previous += 1
-    return True
+        if value != previous - 1:
+            return []
+        previous -= 1
+    return get_not_matching(hand, [])
 
-def is_three_of_a_kind(hand):
+def get_three_of_a_kind(hand):
     triples = get_combinations(hand, 3)
     if len(triples) == 1:
-        return True
-    return False
+        return triples + get_not_matching(hand, triples)
+    return []
 
 def get_two_pairs(hand):
     pairs = get_combinations(hand, 2)
     if len(pairs) == 2:
-        return pairs + get_not_matching(sorted(hand), pairs)
+        return pairs + get_not_matching(hand, pairs)
     return []
 
 def get_combinations(hand, n):
@@ -75,34 +82,28 @@ def get_combinations(hand, n):
     for value, count in combinations.items():
         if count == n:
             pairs.append(value)
-    return sorted(pairs, reverse=True)
+    return pairs
 
 def get_not_matching(hand, removals):
     return [card[0] for card in hand if card[0] not in removals]
 
 def get_pair(hand):
-    # TODO: if same pair, then high card with the rest
     pairs = get_combinations(hand, 2)
     if len(pairs) == 1:
-        return pairs + get_not_matching(sorted(hand, reverse=True), pairs)
+        return pairs + get_not_matching(hand, pairs)
     return []
 
 def get_high_card(hand):
-    # TODO: the high card could be the same for both, than take the second best
-    # high = 0
-    # for card in hand:
-    #     if card[0] == 1:
-    #         return 14
-    #     if card[0] > high:
-    #         high = card[0]
-    # return high
-    return sorted([v for v, t in hand], reverse=True)
+    return [v for v, t in hand]
+
+def get_sorted_hand(hand):
+    return sorted(hand, key=lambda c: c[0], reverse=True)
     
 
 def get_winner(a, b):
-    # TODO: we could sort the hands at the beginning of the checking and all the list are then naturally sorted
-    # a.sort()
-    # b.sort()
+    # first sort the hands by value: we rely on it in multiple places
+    a.sort(key=lambda c: c[0], reverse=True)
+    b.sort(key=lambda c: c[0], reverse=True)
 
     score_a = get_two_pairs(a)
     score_b = get_two_pairs(b)
@@ -129,28 +130,29 @@ def main():
     hand_b = [(1, 'C'), (2, 'C'), (3, 'C'), (4, 'C'), (5, 'C')]
     # print(get_winner(hand_a, hand_b))
 
-    assert(get_high_card([(2, 'D'), (3, 'H'), (2, 'S'), (4, 'H'), (5, 'S')]) == [5, 4, 3, 2, 2])
-    assert(get_high_card([(1, 'D'), (1, 'H'), (2, 'S'), (4, 'H'), (5, 'S')]) == [5, 4, 2, 1, 1])
-    assert(get_pair([(1, 'D'), (1, 'H'), (2, 'S'), (4, 'H'), (5, 'S')]) == [1, 5, 4, 2])
-    assert(get_pair([(1, 'D'), (3, 'H'), (2, 'S'), (4, 'H'), (5, 'S')]) == [])
-    assert(get_two_pairs([(1, 'D'), (3, 'H'), (2, 'S'), (4, 'H'), (5, 'S')]) == [])
-    assert(get_two_pairs([(1, 'D'), (1, 'H'), (2, 'S'), (4, 'H'), (5, 'S')]) == [])
-    assert(get_two_pairs([(1, 'D'), (1, 'H'), (2, 'S'), (2, 'H'), (5, 'S')]) == [2, 1, 5])
-    assert(get_two_pairs([(1, 'D'), (1, 'H'), (2, 'S'), (2, 'H'), (2, 'S')]) == [])
-    # assert(is_three_of_a_kind([(1, 'D'), (1, 'H'), (2, 'S'), (2, 'H'), (2, 'S')]) == True)
-    # assert(is_three_of_a_kind([(1, 'D'), (2, 'H'), (2, 'S'), (2, 'H'), (2, 'S')]) == False)
-    # assert(is_three_of_a_kind([(1, 'D'), (1, 'H'), (2, 'S'), (2, 'H'), (5, 'S')]) == False)
-    # assert(is_straight([(1, 'D'), (1, 'H'), (2, 'S'), (2, 'H'), (5, 'S')]) == False)
-    # assert(is_straight([(2, 'D'), (1, 'H'), (3, 'S'), (4, 'H'), (5, 'S')]) == True)
-    # assert(is_flush([(2, 'D'), (1, 'H'), (3, 'S'), (4, 'H'), (5, 'S')]) == False)
-    # assert(is_flush([(2, 'S'), (1, 'S'), (3, 'S'), (4, 'S'), (5, 'S')]) == True)
-    # assert(is_full_house([(1, 'D'), (1, 'H'), (2, 'S'), (2, 'H'), (2, 'S')]) == True)
-    # assert(is_full_house([(1, 'D'), (1, 'H'), (2, 'S'), (2, 'H'), (3, 'S')]) == False)
-    # assert(is_full_house([(3, 'D'), (1, 'H'), (2, 'S'), (2, 'H'), (2, 'S')]) == False)
-    # assert(is_four_of_a_kind([(1, 'D'), (1, 'H'), (2, 'S'), (2, 'H'), (5, 'S')]) == False)
-    # assert(is_four_of_a_kind([(1, 'D'), (2, 'H'), (2, 'S'), (2, 'H'), (2, 'S')]) == True)
-    # assert(is_straight_flush([(1, 'D'), (2, 'H'), (2, 'S'), (2, 'H'), (2, 'S')]) == False)
-    # assert(is_straight_flush([(1, 'D'), (2, 'D'), (3, 'D'), (4, 'D'), (5, 'D')]) == True)
+    assert(get_high_card(get_sorted_hand(([(2, 'D'), (3, 'H'), (2, 'S'), (4, 'H'), (5, 'S')]))) == [5, 4, 3, 2, 2])
+    assert(get_high_card(get_sorted_hand([(1, 'D'), (1, 'H'), (2, 'S'), (4, 'H'), (5, 'S')])) == [5, 4, 2, 1, 1])
+    assert(get_pair(get_sorted_hand([(1, 'D'), (1, 'H'), (2, 'S'), (4, 'H'), (5, 'S')])) == [1, 5, 4, 2])
+    assert(get_pair(get_sorted_hand([(1, 'D'), (3, 'H'), (2, 'S'), (4, 'H'), (5, 'S')])) == [])
+    assert(get_two_pairs(get_sorted_hand([(1, 'D'), (3, 'H'), (2, 'S'), (4, 'H'), (5, 'S')])) == [])
+    assert(get_two_pairs(get_sorted_hand([(1, 'D'), (1, 'H'), (2, 'S'), (4, 'H'), (5, 'S')])) == [])
+    assert(get_two_pairs(get_sorted_hand([(1, 'D'), (1, 'H'), (2, 'S'), (2, 'H'), (5, 'S')])) == [2, 1, 5])
+    assert(get_two_pairs(get_sorted_hand([(1, 'D'), (1, 'H'), (2, 'S'), (2, 'H'), (2, 'S')])) == [])
+    assert(get_three_of_a_kind(get_sorted_hand([(1, 'D'), (1, 'H'), (2, 'S'), (2, 'H'), (2, 'S')])) == [2, 1, 1])
+    assert(get_three_of_a_kind(get_sorted_hand([(1, 'D'), (2, 'H'), (2, 'S'), (2, 'H'), (2, 'S')])) == [])
+    assert(get_three_of_a_kind(get_sorted_hand([(1, 'D'), (1, 'H'), (2, 'S'), (2, 'H'), (5, 'S')])) == [])
+    assert(get_straight(get_sorted_hand([(1, 'D'), (1, 'H'), (2, 'S'), (2, 'H'), (5, 'S')])) == [])
+    assert(get_straight(get_sorted_hand([(2, 'D'), (1, 'H'), (3, 'S'), (4, 'H'), (5, 'S')])) == [5, 4, 3, 2, 1])
+    assert(get_flush(get_sorted_hand([(2, 'D'), (1, 'H'), (3, 'S'), (4, 'H'), (5, 'S')])) == [])
+    assert(get_flush(get_sorted_hand([(2, 'S'), (1, 'S'), (3, 'S'), (4, 'S'), (6, 'S')])) == [6, 4, 3, 2, 1])
+    # print(get_full_house(get_sorted_hand([(1, 'D'), (1, 'H'), (2, 'S'), (2, 'H'), (2, 'S')])))
+    # assert(get_full_house(get_sorted_hand([(1, 'D'), (1, 'H'), (2, 'S'), (2, 'H'), (2, 'S')])) == [2, 1])
+    # assert(get_full_house(get_sorted_hand([(1, 'D'), (1, 'H'), (2, 'S'), (2, 'H'), (3, 'S')])) == [])
+    # assert(get_full_house(get_sorted_hand([(3, 'D'), (1, 'H'), (2, 'S'), (2, 'H'), (2, 'S')])) == [])
+    assert(get_four_of_a_kind(get_sorted_hand([(1, 'D'), (1, 'H'), (2, 'S'), (2, 'H'), (5, 'S')])) == [])
+    assert(get_four_of_a_kind(get_sorted_hand([(1, 'D'), (2, 'H'), (2, 'S'), (2, 'H'), (2, 'S')])) == [2, 1])
+    assert(get_straight_flush(get_sorted_hand([(1, 'D'), (2, 'H'), (2, 'S'), (2, 'H'), (2, 'S')])) == [])
+    assert(get_straight_flush(get_sorted_hand([(1, 'D'), (2, 'D'), (3, 'D'), (4, 'D'), (5, 'D')])) == [5, 4, 3, 2, 1])
 
     # deck = get_shuffled_deck()
     # print(len(deck), deck)
