@@ -78,7 +78,7 @@ def get_combinations(hand, n):
     return sorted(pairs, reverse=True)
 
 def get_not_matching(hand, removals):
-    return [card for card in hand if card not in removals]
+    return [card[0] for card in hand if card[0] not in removals]
 
 def get_pair(hand):
     # TODO: if same pair, then high card with the rest
@@ -129,14 +129,14 @@ def main():
     hand_b = [(1, 'C'), (2, 'C'), (3, 'C'), (4, 'C'), (5, 'C')]
     # print(get_winner(hand_a, hand_b))
 
-    # assert(get_high_card([(2, 'D'), (3, 'H'), (2, 'S'), (4, 'H'), (5, 'S')]) == 5)
-    # assert(get_high_card([(1, 'D'), (1, 'H'), (2, 'S'), (4, 'H'), (5, 'S')]) == 14)
-    # assert(is_pair([(1, 'D'), (1, 'H'), (2, 'S'), (4, 'H'), (5, 'S')]) == True)
-    # assert(is_pair([(1, 'D'), (3, 'H'), (2, 'S'), (4, 'H'), (5, 'S')]) == False)
-    # assert(is_two_pairs([(1, 'D'), (3, 'H'), (2, 'S'), (4, 'H'), (5, 'S')]) == False)
-    # assert(is_two_pairs([(1, 'D'), (1, 'H'), (2, 'S'), (4, 'H'), (5, 'S')]) == False)
-    # assert(is_two_pairs([(1, 'D'), (1, 'H'), (2, 'S'), (2, 'H'), (5, 'S')]) == True)
-    # assert(is_two_pairs([(1, 'D'), (1, 'H'), (2, 'S'), (2, 'H'), (2, 'S')]) == False)
+    assert(get_high_card([(2, 'D'), (3, 'H'), (2, 'S'), (4, 'H'), (5, 'S')]) == [5, 4, 3, 2, 2])
+    assert(get_high_card([(1, 'D'), (1, 'H'), (2, 'S'), (4, 'H'), (5, 'S')]) == [5, 4, 2, 1, 1])
+    assert(get_pair([(1, 'D'), (1, 'H'), (2, 'S'), (4, 'H'), (5, 'S')]) == [1, 5, 4, 2])
+    assert(get_pair([(1, 'D'), (3, 'H'), (2, 'S'), (4, 'H'), (5, 'S')]) == [])
+    assert(get_two_pairs([(1, 'D'), (3, 'H'), (2, 'S'), (4, 'H'), (5, 'S')]) == [])
+    assert(get_two_pairs([(1, 'D'), (1, 'H'), (2, 'S'), (4, 'H'), (5, 'S')]) == [])
+    assert(get_two_pairs([(1, 'D'), (1, 'H'), (2, 'S'), (2, 'H'), (5, 'S')]) == [2, 1, 5])
+    assert(get_two_pairs([(1, 'D'), (1, 'H'), (2, 'S'), (2, 'H'), (2, 'S')]) == [])
     # assert(is_three_of_a_kind([(1, 'D'), (1, 'H'), (2, 'S'), (2, 'H'), (2, 'S')]) == True)
     # assert(is_three_of_a_kind([(1, 'D'), (2, 'H'), (2, 'S'), (2, 'H'), (2, 'S')]) == False)
     # assert(is_three_of_a_kind([(1, 'D'), (1, 'H'), (2, 'S'), (2, 'H'), (5, 'S')]) == False)
